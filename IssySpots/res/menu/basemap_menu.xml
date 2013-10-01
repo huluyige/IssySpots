@@ -1,0 +1,8 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/World_Street_Map"
+        android:title="@string/StreetMapMenu" />
+    <item android:id="@+id/World_Imagery_Map"
+        android:title="@string/ImageryMenu"/>
+</menu>
+
+

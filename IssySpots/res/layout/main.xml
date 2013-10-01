@@ -6,9 +6,10 @@
     android:layout_height="fill_parent"
     tools:context=".MainActivity"
     >
-<TextView  
-    android:layout_width="fill_parent" 
-    android:layout_height="wrap_content" 
-    android:text="@string/hello"
-    />
+    <com.esri.android.map.MapView
+  		android:id="@+id/map"
+  		android:layout_width="fill_parent"
+  		android:layout_height="fill_parent"
+  		initExtent = "249854.9485678413, 6244045.2504612515, 254278.4510396169, 6248320.524498849">
+  	</com.esri.android.map.MapView>
 </LinearLayout>
