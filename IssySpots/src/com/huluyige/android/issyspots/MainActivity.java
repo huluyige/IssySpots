@@ -1,6 +1,5 @@
 package com.huluyige.android.issyspots;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,16 +9,13 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.JsonParser;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.content.Intent;
 import android.os.Bundle;
-import android.util.Base64;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,18 +27,18 @@ import com.esri.android.map.Callout;
 import com.esri.android.map.Layer;
 import com.esri.android.map.MapView;
 import com.esri.android.map.ags.ArcGISFeatureLayer;
-import com.esri.android.map.ags.ArcGISFeatureLayer.SELECTION_METHOD;
+import com.esri.android.map.ags.ArcGISFeatureLayer.Options;
 import com.esri.android.map.ags.ArcGISTiledMapServiceLayer;
 import com.esri.android.map.event.OnSingleTapListener;
 import com.esri.android.map.event.OnStatusChangedListener;
+import com.esri.core.geometry.Envelope;
 import com.esri.core.geometry.Point;
-import com.esri.core.map.CallbackListener;
 import com.esri.core.map.FeatureSet;
 import com.esri.core.map.FeatureType;
 import com.esri.core.map.Graphic;
-import com.esri.core.tasks.ags.query.Query;
 
-public class MainActivity extends SherlockActivity implements ActionBar.OnNavigationListener  {
+public class MainActivity extends SherlockActivity implements
+		ActionBar.OnNavigationListener {
 
 	private MapView mapview;
 	private ArcGISTiledMapServiceLayer basemapStreet;
@@ -53,8 +49,9 @@ public class MainActivity extends SherlockActivity implements ActionBar.OnNaviga
 	private Boolean isMapViewLoaded = false;
 	private Graphic identifiedGraphic;
 	private int calloutStyle;
-	private FeatureType[] types;
+	private String[] types;
 	private Menu optionsMenu;
+	private int typeIndex=0;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -62,15 +59,10 @@ public class MainActivity extends SherlockActivity implements ActionBar.OnNaviga
 		super.onCreate(savedInstanceState);
 		getSupportActionBar().show();
 		setContentView(R.layout.main);
-//		ImageView iv=(ImageView) findViewById(R.id.image);
-//		String encodedImage="iVBORw0KGgoAAAANSUhEUgAAABYAAAAWCAYAAADEtGw7AAAAAXNSR0IB2cksfwAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAaNJREFUOI3t1E8og3Ecx/H3Hk/bzGZ5yL+UpbaUEeFAkhy4KAe5uCi18icOyt+DgxspFwduSikp8+egRPlzEdepHTgssSUZhmx4OIia7dkMu/mcnu+35/fq0++pRyROEeMO90lNNlFKmHw69ScCqhidVyFTvJRdgfYJ1uxBsDpLM+U/8ql/WFAluwLpQq56GhfBcCQ0r6eMlpFuADbnV9jvWQr7nhCQpY/nb92xqFVjTE0BQKvXRmweFVZpBBoWOgAwpBg/9+YSK4blLgD2Zuxcr5+HL6MISyLVjfUhe0uxFUuxFQDH5j7XxAjjlzlxOAHQ6LTk5JkAuDhz4/PeAHB/dat4XBGWr56ZLux/b9lfiW1sEIDDjR222+YVweiNf5l/ODosSCLNi70AJBmTP/cFFaVkbOUAsDO7imfOGRuMRqCstipkbco3Y8o3A3C0e4iHWOFf5q/h1xBYX5P2crd9mfAxy+4Ao3W2iMq9wxs0i9k6H+4vsKW+fNz5cjDweOwTlA6Gi5D1/rfVF6XePTi9rSGNW4Y6h4HhqJJS3MFj3D7eGy4ycoggiBU9AAAAAElFTkSuQmCC";
-//		byte[] decodedString = Base64.decode(encodedImage, Base64.DEFAULT);
-//		Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length); 
-//		iv.setImageBitmap(decodedByte);
-		
-        getSupportActionBar().setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
-		
-        // Retrieve the map and initial extent from XML layout
+
+		getSupportActionBar().setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
+
+		// Retrieve the map and initial extent from XML layout
 		mapview = (MapView) findViewById(R.id.map);
 
 		mapview.setOnStatusChangedListener(new OnStatusChangedListener() {
@@ -84,25 +76,33 @@ public class MainActivity extends SherlockActivity implements ActionBar.OnNaviga
 					isMapViewLoaded = true;
 				} else if ((source == featureLayer)
 						&& (status == STATUS.LAYER_LOADED)) {
-					System.out.println("LAYER_LOADED " + featureLayer.getTypes());
-					types=featureLayer.getTypes();
-					
-					String[] typeArray= new String[types.length]; 
-					for(int i=0;i<types.length;i++){
-						typeArray[i]=types[i].getName();
-					}
-					
-			        Context context = getSupportActionBar().getThemedContext();
-			        ArrayAdapter<String> list = new ArrayAdapter<String>(context,  R.layout.sherlock_spinner_item, typeArray);
-			        list.setDropDownViewResource(R.layout.sherlock_spinner_dropdown_item);
 
-			        getSupportActionBar().setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
-			        getSupportActionBar().setListNavigationCallbacks(list, MainActivity.this);
-					
-				}
-				else if ((source == basemapStreet)
+					System.out.println("LAYER_LOADED "
+							+ featureLayer.getTypes());
+					FeatureType[] typesArray = featureLayer.getTypes();
+
+					types = new String[typesArray.length + 1];
+					for (int i = 0; i < types.length; i++) {
+						if (i == 0) {
+							types[i] = "Tous les types";
+						} else {
+							types[i] = typesArray[i - 1].getId();
+						}
+					}
+
+					Context context = getSupportActionBar().getThemedContext();
+					ArrayAdapter<String> list = new ArrayAdapter<String>(
+							context, R.layout.sherlock_spinner_item, types);
+					list.setDropDownViewResource(R.layout.sherlock_spinner_dropdown_item);
+
+					getSupportActionBar().setNavigationMode(
+							ActionBar.NAVIGATION_MODE_LIST);
+					getSupportActionBar().setListNavigationCallbacks(list,
+							MainActivity.this);
+
+				} else if ((source == basemapStreet)
 						&& (status == STATUS.LAYER_LOADED)) {
-					
+
 				}
 			}
 		});
@@ -124,6 +124,7 @@ public class MainActivity extends SherlockActivity implements ActionBar.OnNaviga
 				// }
 			}
 		});
+
 		/* create an initial basemap */
 		basemapStreet = new ArcGISTiledMapServiceLayer(this.getResources()
 				.getString(R.string.WORLD_STREET_MAP));
@@ -135,25 +136,39 @@ public class MainActivity extends SherlockActivity implements ActionBar.OnNaviga
 		basemapStreet.setVisible(true);
 		basemapImagery.setVisible(false);
 
-//		featureLayer = new ArcGISFeatureLayer(
-//				"http://services.opengeodata.fr/arcgis/rest/services/ISSY_MLX/ISSY_ETABL_PUB/FeatureServer/0",
-//				ArcGISFeatureLayer.MODE.SNAPSHOT);
+		Envelope initExtent = new Envelope(249854.9485678413,
+				6244045.2504612515, 254278.4510396169, 6248320.524498849);
+		mapview.setExtent(initExtent);
+
 		
-		FeatureSet fs= createWindTurbinesFeatureSet("fl_featureset.json");
-		String fd=null;
-		try {
-			fd=assetFileToString("fl_definition.json");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		ArcGISFeatureLayer.Options layerOptions = new ArcGISFeatureLayer.Options();
-		layerOptions.mode = ArcGISFeatureLayer.MODE.SNAPSHOT;
-		featureLayer=new ArcGISFeatureLayer(fd, fs, layerOptions);
+		ArcGISFeatureLayer.Options fOptions= new Options();
+		fOptions.mode=ArcGISFeatureLayer.MODE.SNAPSHOT;
+		String[] outFields ={"nom", "categorie", "adresse", "cp","ville","tel","web"};
+		fOptions.outFields=outFields;
+		featureLayer = new ArcGISFeatureLayer(this.getResources().getString(
+				R.string.ISSY_FEATURE_LAYER), fOptions);
+		featureLayer.setOnStatusChangedListener(new OnStatusChangedListener() {
+
+			@Override
+			public void onStatusChanged(Object arg0, STATUS arg1) {
+				if (arg1 == STATUS.INITIALIZATION_FAILED) {
+					Toast.makeText(MainActivity.this,
+							"Échec de l'initialisation", Toast.LENGTH_SHORT)
+							.show();
+				} else if (arg1 == STATUS.LAYER_LOADING_FAILED) {
+					Toast.makeText(MainActivity.this,
+							"Échec du chargement de couche", Toast.LENGTH_SHORT)
+							.show();
+				}				
+
+			}
+		});
+
 		mapview.addLayer(featureLayer);
 		// attribute ESRI logo to map
 		mapview.setEsriLogoVisible(true);
 		// enable map to wrap around date line
+
 		mapview.enableWrapAround(true);
 
 		calloutStyle = R.xml.identify_calloutstyle;
@@ -182,53 +197,64 @@ public class MainActivity extends SherlockActivity implements ActionBar.OnNaviga
 		mapview.unpause();
 	}
 
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
 
-    public boolean onCreateOptionsMenu(Menu menu) {
+		menu.add("Imagerie").setShowAsAction(
+				MenuItem.SHOW_AS_ACTION_IF_ROOM
+						| MenuItem.SHOW_AS_ACTION_WITH_TEXT);
 
-        menu.add("Imagerie")
-            .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM| MenuItem.SHOW_AS_ACTION_WITH_TEXT);
+		menu.add("List").setShowAsAction(
+				MenuItem.SHOW_AS_ACTION_IF_ROOM
+						| MenuItem.SHOW_AS_ACTION_WITH_TEXT);
+		optionsMenu = menu;
+		return true;
+	}
 
-        menu.add("Filtre")
-            .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM | MenuItem.SHOW_AS_ACTION_WITH_TEXT);
-        optionsMenu=menu;
-        return true;
-    }
-	
+	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		// handle item selection
-		switch (item.getItemId()) {
-		case 0:
-			if(item.getTitle().equals("Imagerie")){
-				basemapStreet.setVisible(false);
-				basemapImagery.setVisible(true);
-				item.setTitle("Carte");
-			}
-			else if(item.getTitle().equals("Carte")){
-				basemapStreet.setVisible(true);
-				basemapImagery.setVisible(false);
-				item.setTitle("Imagerie");
-			}
+		if (item.getTitle().equals("Imagerie")) {
+			basemapStreet.setVisible(false);
+			basemapImagery.setVisible(true);
+			item.setTitle("Carte");
 			return true;
-		case 1:
+		}
+		if (item.getTitle().equals("Carte")) {
+			basemapStreet.setVisible(true);
+			basemapImagery.setVisible(false);
+			item.setTitle("Imagerie");
 			return true;
-		default:
+		} else if (item.getTitle().equals("List")) {
+			Intent intent= new Intent(MainActivity.this, ListActivity.class);
+			String type=types[this.typeIndex];
+			intent.putExtra("type", type);
+			intent.putExtra("url", featureLayer.getUrl());
+			startActivity(intent);
+			return true;
+
+		} else {
 			return super.onOptionsItemSelected(item);
 		}
+
 	}
-    @Override
-    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
 
-        for (FeatureType type : types) {
-        	menu.add(type.getName());
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v,
+			ContextMenu.ContextMenuInfo menuInfo) {
+
+		for (String type : types) {
+			menu.add(type);
 		}
-    }
+	}
 
-    @Override
-    public boolean onContextItemSelected(android.view.MenuItem item) {
-        //Note how this callback is using the fully-qualified class name
-        Toast.makeText(this, "Got click: " + item.toString(), Toast.LENGTH_SHORT).show();
-        return true;
-    }
+	@Override
+	public boolean onContextItemSelected(android.view.MenuItem item) {
+		// Note how this callback is using the fully-qualified class name
+		Toast.makeText(this, "Got click: " + item.toString(),
+				Toast.LENGTH_SHORT).show();
+		return true;
+	}
 
 	private void identifyLocation(float x, float y) {
 
@@ -317,68 +343,67 @@ public class MainActivity extends SherlockActivity implements ActionBar.OnNaviga
 	}
 
 	public void callout_onClick(View view) {
-		Toast.makeText(this, "test", Toast.LENGTH_SHORT).show();
+
+		Intent intent = new Intent(MainActivity.this, DetailActivity.class);
+		intent.putExtra("data", identifiedGraphic);
+		startActivity(intent);
 	}
 
 	@Override
 	public boolean onNavigationItemSelected(int itemPosition, long itemId) {
-//		System.out.println("onNavigationItemSelected");
-//		Query query= new Query();
-//		query.setWhere("categorie like \'Presse & Edition\'");
-//		String[] outFields= new String[]{"*"};
-//		query.setOutFields(outFields);
-//		featureLayer.selectFeatures(query, SELECTION_METHOD.SUBTRACT, new CallbackListener<FeatureSet>() {
-//			
-//			@Override
-//			public void onError(Throwable arg0) {
-//				System.out.println("error: "+arg0.getMessage());
-//				
-//			}
-//			
-//			@Override
-//			public void onCallback(FeatureSet arg0) {
-//				try {
-//					System.out.println("go:"+FeatureSet.toJson(arg0));
-//				} catch (Exception e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
-//				
-//			}
-//		});
-//		
-		
-		return false;
-	}
-	
-	  public FeatureSet createWindTurbinesFeatureSet(String path) {
-		    FeatureSet fs = null;
-		    
-		    try {
-		      JsonFactory factory = new JsonFactory();
-		      JsonParser parser = factory.createJsonParser(getAssets().open(path));
-		      parser.nextToken();
-		      fs = FeatureSet.fromJson(parser);
-		    } catch (JsonParseException e) {
-		      e.printStackTrace();
-		    } catch (FileNotFoundException e) {
-		      e.printStackTrace();
-		    } catch (IOException e) {
-		      e.printStackTrace();
-		    } catch (Exception e) {
-		      e.printStackTrace();
-		    }
-		    
-		    return fs;
-		  } 
+		System.out.println("onNavigationItemSelected: " + itemPosition);
 
-	  public String assetFileToString(String path) throws IOException{
-		  InputStream stream = getAssets().open(path);
-		  int size = stream.available();
-		  byte[] buffer = new byte[size];
-		  stream.read(buffer);
-		  stream.close();
-		  String text = new String(buffer);
-		  return text;
-	  }
+		if (itemPosition != 0) {
+			featureLayer
+					.setDefinitionExpression(getRightWhereClause(types[itemPosition]));
+			featureLayer.refresh();
+			System.out.println("features: "+featureLayer.getGraphicIDs().length);
+		} else {
+			featureLayer.setDefinitionExpression(featureLayer
+					.getDefaultDefinitionExpression());
+			featureLayer.refresh();
+		}
+		typeIndex=itemPosition;
+		return true;
+	}
+
+	public static String getRightWhereClause(String str) {
+		if (str.contains("\'")) {
+			String newSt = str.replace("\'", "\'\'");
+			return "categorie like " + "\'" + newSt + "\'";
+		} else
+			return "categorie like " + "\'" + str + "\'";
+	}
+
+	public FeatureSet createWindTurbinesFeatureSet(String path) {
+		FeatureSet fs = null;
+
+		try {
+			JsonFactory factory = new JsonFactory();
+			JsonParser parser = factory
+					.createJsonParser(getAssets().open(path));
+			parser.nextToken();
+			fs = FeatureSet.fromJson(parser);
+		} catch (JsonParseException e) {
+			e.printStackTrace();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return fs;
+	}
+
+	public String assetFileToString(String path) throws IOException {
+		InputStream stream = getAssets().open(path);
+		int size = stream.available();
+		byte[] buffer = new byte[size];
+		stream.read(buffer);
+		stream.close();
+		String text = new String(buffer);
+		return text;
+	}
 }

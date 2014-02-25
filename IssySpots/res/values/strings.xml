@@ -5,6 +5,7 @@
     
     <string name="WORLD_STREET_MAP">http://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer</string>
     <string name="WORLD_IMAGERY_MAP">http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer</string>
+    <string name="ISSY_FEATURE_LAYER">http://services.opengeodata.fr/arcgis/rest/services/ISSY_MLX/ISSY_ETABL_PUB/FeatureServer/0</string>
     <!-- basemap menu items -->
     <string name="StreetMapMenu">Carte</string>
     <string name="ImageryMenu">Imagerie</string>
